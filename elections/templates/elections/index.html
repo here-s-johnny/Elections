@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Wybory 2005</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% load staticfiles %}
+
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'elections/style.css' %}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="{% static 'elections/ajax.js' %}"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        var geo_data_1 = [
+            ['Voivodeship', 'Results', {type: 'string', role: 'tooltip'}],
+            {%  for voi in voivodeships %}
+                [{
+                    v: '{{ voi.voi_choice }}',
+                    f: '{{ voi.name }}'
+                    }, {{ voi.percent_1}}, '{{ voi.percent_1 }}%'],
+            {% endfor %}
+        ]
+
+        var geo_data_2 = [
+            ['Voivodeship', 'Results', {type: 'string', role: 'tooltip'}],
+            {%  for voi in voivodeships %}
+                [{
+                    v: '{{ voi.voi_choice }}',
+                    f: '{{ voi.name }}'
+                    }, {{ voi.percent_2}}, '{{ voi.percent_2 }}%'],
+            {% endfor %}
+        ]
+    </script>
+    <script type="text/javascript" src="{% static "elections/map.js" %}"></script>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Wybory Prezydenckie 2005</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="myNavbar">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Home</a></li>
+                <li><a href="">Akty Prawne</a></li>
+                <li><a href="">Dokumenty</a></li>
+                <li><a href="">Organy Wyborcze</a></li>
+                <li><a href="">Kandydaci</a></li>
+                <li><a href="">Frekwencja</a></li>
+                <li><a href="">Wyniki</a></li>
+                <li><a href="">Pierwsze głosowanie</a></li>
+                <li><a href="">SEJM</a></li>
+                <li><a href="">SENAT</a></li>
+                <li><a href="">Wykonawca</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{% if user.is_authenticated %}
+    <p>Welcome, {{ user.username }}  <a id="logout" href="logout/">[logout]</a></p>
+{% else %}
+    <p>Welcome, Guest <a id="login" href="login/">[login]</a></p>
+{% endif %}
+
+<br>
+<div>
+<!-- <div style="background-image: url({% static "elections/images/flag.jpg" %}") class="jumbotron"> -->
+    <div class="container text-center">
+        <img alt src="{% static "elections/images/main_pl.jpg" %}">
+        <!-- <h1>Wyniki wyborów prezydenckich 2005</h1> -->
+    </div>
+</div>
+</br>
+
+<div class="container" style="overflow: visible" id="geotable">
+    <table>
+        <col width="400">
+        <col width="400">
+        <tr class>
+            <th class="title">{{ candidate_1 }}</th>
+            <th class="title">{{ candidate_2 }}</th>
+        </tr>
+    </table> 
+    <div id="regions_div"></div>
+    <div id="regions_div_2"></div>
+    <div class="stats">
+        <table class="stats_table">
+            <tr>
+                <th colspan="2">Polska</th>
+            </tr>
+            <tr>
+                <th colspan="2"> Statystyka, stan na 30.06.2005</th>
+            </tr>
+            <tr>
+                <td>Liczba mieszkańców:</td>
+                <td>{{ citizens }}</td>
+            </tr>
+            <tr>
+                <td>Powierzchnia:</td>
+                <td>123413 m2</td>
+            </tr>
+            <tr>
+                <td>Zaludnienie:</td>
+                <td>121 os/km2</td>
+            </tr>
+        </table>
+    </div>
+    <div class="stats">
+        <table class="stats_table">
+            <tr>
+                <th colspan="2">Zbiorcze wyniki głosowania</th>
+            </tr>
+            <tr>
+                <td>Liczba uprawnionych:</td>
+                <td>{{ allowed }}</td>
+            </tr>
+            <tr>
+                <td>Liczba wydanych kart:</td>
+                <td>{{ voting_cards }}</td>
+            </tr>
+            <tr>
+                <td>Liczba oddanych głosów:</td>
+                <td>{{ votes }}</td>
+            </tr>
+            <tr>
+                <td>Liczba ważnych głosów:</td>
+                <td>{{ valid_votes }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+<br>
+
+<div class="container">
+    {% if no_of_voivodeships > 0 %}
+        <table>
+            <caption>Porównanie wyników głosowania na kandydatów w województwach</caption>
+            <thead>
+            <tr>
+                <th rowspan="3">Wojewodztwo</th>
+                <th rowspan="3">Łącznie głosów</th>
+                <th colspan="2">{{ candidate_1 }}</th>
+                <th rowspan="3">Liczba głosów:<br>na kandydata / ważnych<br>[%]</th>
+                <th colspan="2">{{ candidate_2 }}</th>
+            </tr>
+            <tr>
+                <th colspan="2">głosów na kandydata</th>
+                <th colspan="2">głosów na kandydata</th>
+            </tr>
+            <tr>
+                <th>liczba</th>
+                <th>%</th>
+                <th>%</th>
+                <th>liczba</th>
+            </tr>
+            </thead>
+            <tfoot>
+            <tr>
+                <th>&#931;</th>
+                <th>{{ valid_votes }}</th>
+                <th>{{ votes_for_cand_1 }}</th>
+                <th>{{ cand_1_percentage }}</th>
+                <th>
+                    <div class="progressbar">
+                        <div style="width: {{ cand_1_percentage }}%"></div>
+                    </div>
+                </th>
+                <th>{{ cand_2_percentage }}</th>
+                <th>{{ votes_for_cand_2 }}</th>
+            </tr>
+            </tfoot>
+            <tbody>
+            {% for v in voivodeships %}
+                <tr>
+                    <td style="background-color:transparent; color:black">
+                    
+                    <span id="{{ v.name }}" class="voi_name w3-btn"  onclick="document.getElementById('modal').style.display='block'" style="background-color:transparent; color:black">{{ v.name }}, woj.</span>
+               
+                    </td>
+                    <td> {{ v.votes }} </td>
+                    <td> {{ v.votes_for_cand_1 }} </td>
+                    <td> {{ v.percent_1 }} </td>
+                    <td>
+                        <div class="progressbar">
+                            <div style="width: {{ v.percent_1 }}%"></div>
+                        </div>
+                    </td>
+                    <td> {{ v.percent_2 }}</td>
+                    <td>{{ v.votes_for_cand_2 }} </td>
+                </tr>
+
+
+
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+<br>
+
+<div class="container">
+        <table>
+            <caption>Porównanie wyników głosowania na kandydatów w zależności od siedziby komisji obwodowej</caption>
+            <thead>
+            <tr>
+                <th rowspan="3">Podział</th>
+                <th rowspan="3">Łącznie głosów</th>
+                <th colspan="2">{{ candidate_1 }}</th>
+                <th rowspan="3">Liczba głosów:<br>na kandydata / ważnych<br>[%]</th>
+                <th colspan="2">{{ candidate_2 }}</th>
+            </tr>
+            <tr>
+                <th colspan="2">głosów na kandydata</th>
+                <th colspan="2">głosów na kandydata</th>
+            </tr>
+            <tr>
+                <th>liczba</th>
+                <th>%</th>
+                <th>%</th>
+                <th>liczba</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for d in distribution_by_type %}
+                <tr>
+                    <td style="background-color:transparent; color:black">
+                    
+                    <span id="{{ d.name }}" class="area_type w3-btn"  onclick="document.getElementById('modal').style.display='block'" style="background-color:transparent; color:black">{{ d.name }}</span>
+
+                    </td>
+                    <td> {{ d.valid_votes }} </td>
+                    <td> {{ d.votes_for_cand_1 }} </td>
+                    <td> {{ d.percent_1 }} </td>
+                    <td> 
+                        <div class="progressbar">
+                            <div style="width: {{ d.percent_1 }}%"></div>
+                        </div>
+                    </td>
+                    <td> {{ d.percent_2 }} </td>
+                    <td> {{ d.votes_for_cand_2 }} </td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan=7 style="text-align:left;vertical-align:top;padding:0;color:grey"> Porównanie wyników głosowania na kandydatów w zależności od ilości mieszkańców gminy </td>
+                </tr>
+                {% for d in distribution_by_amount %}
+                <tr>
+                     <td style="background-color:transparent; color:black">
+                    
+                    <span id="{{ d.name }}" data-min="{{ d.min }}" data-max="{{ d.max }}" class="dist_amount w3-btn"  onclick="document.getElementById('modal').style.display='block'" style="background-color:transparent; color:black">{{ d.name }}</span>
+               
+                    </td>
+                    <td> {{ d.valid_votes }} </td>
+                    <td> {{ d.votes_for_cand_1 }} </td>
+                    <td> {{ d.percent_1 }} </td>
+                    <td> 
+                        <div class="progressbar">
+                            <div style="width: {{ d.percent_1 }}%"></div>
+                        </div>
+                    </td>
+                    <td> {{ d.percent_2 }} </td>
+                    <td> {{ d.votes_for_cand_2 }} </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+</div>
+<br>
+
+
+
+
+<br>
+<div class="container">
+    {% if no_of_communities > 0 %}
+        <table>
+            <caption>Porównanie wyników głosowania na kandydatów w gminach</caption>
+            <thead>
+            <tr>
+                <th rowspan="3">Gmina</th>
+                <th rowspan="3">Rodzaj</th>
+                <th rowspan="3">W województwie</th>
+                <th rowspan="3">Łącznie głosów</th>
+                <th colspan="2">{{ candidate_1 }}</th>
+                <th rowspan="3">Liczba głosów:<br>na kandydata / ważnych<br>[%]</th>
+                <th colspan="2">{{ candidate_2 }}</th>
+            </tr>
+            <tr>
+                <th colspan="2">głosów na kandydata</th>
+                <th colspan="2">głosów na kandydata</th>
+            </tr>
+            <tr>
+                <th>liczba</th>
+                <th>%</th>
+                <th>%</th>
+                <th>liczba</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for c in communities %}
+                <tr>
+                    <td> {{ c.name }}, gm.</td>
+                    <td> {{ c.get_kind_display }}</td>
+                    <td> {{ c.voivodeship_ptr }}, woj.</td>
+                    <td> {{ c.get_votes.valid_votes}}</td>
+                    <td> {{ c.get_votes.votes_for_cand_1 }} </td>
+                    <td> {{ c.get_votes.percent_1 }} </td>
+                    <td>
+                        <div class="progressbar">
+                            <div style="width: {{ c.get_votes.percent_1 }}%"></div>
+                        </div>
+                    </td>
+                    <td> {{ c.get_votes.percent_2 }}</td>
+                    <td> {{ c.get_votes.votes_for_cand_2 }} </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+</br>
+
+ <!-- The Display Modal -->
+                                    
+<div id="modal" class="w3-modal">
+    <div class="w3-modal-content">
+        <div class="w3-container">
+            <span onclick="document.getElementById('modal').style.display='none'" 
+            class="w3-closebtn">&times;</span>
+        </div> 
+        <div class="w3-container" >  
+            <table class="w3-table">
+                <caption>Porównanie wyników głosowania na kandydatów w gminach</caption>
+                <thead>
+                <tr>
+                    <th rowspan="3">Gmina</th>
+                    <th rowspan="3">Rodzaj</th>
+                    <th rowspan="3">W województwie</th>
+                    <th rowspan="3">Łącznie głosów</th>
+                    <th colspan="2">{{ candidate_1 }}</th>
+                    <th rowspan="3">Liczba głosów:<br>na kandydata / ważnych<br>[%]</th>
+                    <th colspan="2">{{ candidate_2 }}</th>
+                    <th rowspan="3">Modyfikacja</th>
+                </tr>
+                <tr>
+                    <th colspan="2">głosów na kandydata</th>
+                    <th colspan="2">głosów na kandydata</th>
+                </tr>
+                <tr>
+                    <th>liczba</th>
+                    <th>%</th>
+                    <th>%</th>
+                    <th>liczba</th>
+                </tr>
+
+                </thead>
+                <tbody id="tbody">
+            <!--     {% for c in communities %}
+                {% if v.name == c.voivodeship_ptr.name %}
+                    <tr>
+                        <td> {{ c.name }}, gm.</td>
+                        <td> {{ c.get_kind_display }}</td>
+                        <td> {{ c.voivodeship_ptr }}, woj.</td>
+                        <td> {{ c.get_votes.valid_votes}}</td>
+                        <td> {{ c.get_votes.votes_for_cand_1 }} </td>
+                        <td> {{ c.get_votes.percent_1 }} </td>
+                        <td>
+                            <div class="progressbar">
+                                <div style="width: {{ c.get_votes.percent_1 }}%"></div>
+                            </div>
+                        </td>
+                        <td> {{ c.get_votes.percent_2 }}</td>
+                        <td> {{ c.get_votes.votes_for_cand_2 }} </td>
+                    </tr>
+                {% endif %}
+                {% endfor %} -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- The Modification Modal -->
+
+<div id="modal2" class="w3-modal">
+    <div class="w3-modal-content">
+        <div class="w3-container">
+            <div id="not-edited" data-msg=""></div>
+            <span onclick="document.getElementById('modal2').style.display='none'; document.getElementById('modal').style.display='none'" 
+            class="w3-closebtn">&times;</span>
+        </div> 
+        <div class="w3-container">
+            <form class="form" method="POST">
+                {% csrf_token %}
+                <h2 class="formheading">Wpisz nowe wartości</h2>
+                <label for="inputVotingCards">Wydanych kart</label>
+                <input type="votingCards" id="inputVotingCards" required autofocus>
+                <label for="inputVotes">Głosy</label>
+                <input type="votes" id="inputVotes" required autofocus>
+                <label for="inputValidVotes">Głosy ważne</label>
+                <input type="validVotes" id="inputValidVotes" required autofocus>
+                <label for="inputVotesForCand1">Głosy na kand 1</label>
+                <input type="votesForCand1" id="inputVotesForCand1" required autofocus>
+                <label for="inputVotesForCand2">Głosy na kand 2</label>
+                <input type="votesForCand2" id="inputVotesForCand2" required autofocus>
+                {% if user.is_authenticated %}
+                <button id="submit" class="btn btn-lg btn-primary btn-block" onclick="document.getElementById('modal2').style.display='none'; document.getElementById('modal').style.display='none'" type="submit">Zmodyfikuj</button>
+                {% else %}
+                <label class="btn btn-lg btn-primary btn-block">Musisz być zalogowany żeby modyfikować!</label>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<footer class="container-fluid text-center">
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Wybory Prezydenckie 2005</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="myNavbar">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Home</a></li>
+                    <li><a href="">Akty Prawne</a></li>
+                    <li><a href="">Dokumenty</a></li>
+                    <li><a href="">Organy Wyborcze</a></li>
+                    <li><a href="">Kandydaci</a></li>
+                    <li><a href="">Frekwencja</a></li>
+                    <li><a href="">Wyniki</a></li>
+                    <li><a href="">Pierwsze głosowanie</a></li>
+                    <li><a href="">SEJM</a></li>
+                    <li><a href="">SENAT</a></li>
+                    <li><a href="">Wykonawca</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <p>Copyright Jan Gajl, jg332124</p>
+</footer>
+
+</body>
+</html>
